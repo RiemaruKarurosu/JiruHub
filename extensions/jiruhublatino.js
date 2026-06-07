@@ -1,13 +1,13 @@
 // ==MiruExtension==
 // @name         JiruHub Latino
-// @version      v0.1.0
+// @version      v0.1.1
 // @author       jephMD
 // @lang         es
 // @license      MIT
 // @icon         https://raw.githubusercontent.com/jephersonRD/JiruHub/main/icons/app.png
 // @package      jiruhublatino
 // @type         bangumi
-// @webSite      https://github.com/jephersonRD/JiruHub
+// @webSite      https://www.1024terabox.com
 // @nsfw         false
 // ==/MiruExtension==
 
@@ -91,7 +91,7 @@ export default class extends Extension {
         type: "mp4",
         url: url,
         headers: {
-          "User-Agent": "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
           "Referer": "https://www.terabox.com/",
           "Origin": "https://www.terabox.com"
         },
@@ -99,69 +99,67 @@ export default class extends Extension {
       };
     }
 
-    // URL es un share link de Terabox/1024terabox - extraer video real
-    try {
-      const html = await this.request(url, {
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
-          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8"
+    // Extraer surl de la URL de Terabox
+    const surlMatch = url.match(/\/s\/([a-zA-Z0-9_-]+)/);
+    const surl = surlMatch ? surlMatch[1] : null;
+
+    if (surl) {
+      try {
+        // Paso 1: Obtener la lista de archivos del share link
+        const listUrl = "https://www.1024terabox.com/share/list?app_id=250528&channel=dubox&clienttype=0&web=1&surl=" + surl + "&page=1&num=100&order=time&desc=1&showempty=0";
+        const listRaw = await this.request(listUrl);
+        const listData = typeof listRaw === "string" ? JSON.parse(listRaw) : listRaw;
+
+        if (listData && listData.errno === 0 && Array.isArray(listData.list) && listData.list.length > 0) {
+          const file = listData.list[0];
+          const fsId = file.fs_id;
+
+          // Paso 2: Obtener la URL de descarga directa
+          const dlUrl = "https://www.1024terabox.com/share/download?app_id=250528&channel=dubox&clienttype=0&web=1&surl=" + surl + "&fs_id=" + fsId;
+          const dlRaw = await this.request(dlUrl);
+          const dlData = typeof dlRaw === "string" ? JSON.parse(dlRaw) : dlRaw;
+
+          if (dlData && dlData.errno === 0 && dlData.dlink) {
+            let videoUrl = dlData.dlink;
+            if (videoUrl.startsWith("//")) videoUrl = "https:" + videoUrl;
+            return {
+              type: videoUrl.includes(".m3u8") ? "hls" : "mp4",
+              url: videoUrl,
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+                "Referer": "https://www.terabox.com/",
+                "Origin": "https://www.terabox.com"
+              },
+              subtitles: []
+            };
+          }
         }
-      });
 
-      const text = typeof html === "string" ? html : String(html);
-
-      // Buscar patrones comunes de URL de video en la pagina
-      const patterns = [
-        /"dlink"\s*:\s*"(https?:\/\/[^"]+\.(?:mp4|m3u8)[^"]*)"/,
-        /"download_link"\s*:\s*"(https?:\/\/[^"]+)"/,
-        /"video_url"\s*:\s*"(https?:\/\/[^"]+)"/,
-        /data-src\s*=\s*"(https?:\/\/[^"]+\.(?:mp4|m3u8)[^"]*)"/,
-        /src\s*=\s*"(https?:\/\/[^"]+\.(?:mp4|m3u8)[^"]*)"/,
-        /video_url\s*:\s*"([^"]+)"/,
-        /play_url\s*:\s*"([^"]+)"/,
-        /"url"\s*:\s*"(https?:\/\/[^"]+\.(?:mp4|m3u8)[^"]*)"/
-      ];
-
-      for (const p of patterns) {
-        const m = text.match(p);
-        if (m) {
-          let videoUrl = m[1];
-          if (videoUrl.startsWith("//")) videoUrl = "https:" + videoUrl;
+        if (listData && listData.errno === 2) {
           return {
-            type: videoUrl.includes(".m3u8") ? "hls" : "mp4",
-            url: videoUrl,
+            type: "mp4",
+            url: "error://terabox-needs-login",
             headers: {
-              "User-Agent": "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
-              "Referer": "https://www.terabox.com/",
-              "Origin": "https://www.terabox.com"
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
             },
             subtitles: []
           };
         }
+      } catch (e) {
+        this.log && this.log("Error API Terabox: " + String(e));
       }
-
-      // Si no se encontro video en HTML, devolver la URL con headers
-      return {
-        type: "mp4",
-        url: url,
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
-          "Referer": "https://www.terabox.com/",
-          "Origin": "https://www.terabox.com"
-        },
-        subtitles: []
-      };
-    } catch {
-      return {
-        type: "mp4",
-        url: url,
-        headers: {
-          "User-Agent": "Mozilla/5.0 (Linux; Android 11) AppleWebKit/537.36 Chrome/120.0.0.0 Mobile Safari/537.36",
-          "Referer": "https://www.terabox.com/",
-          "Origin": "https://www.terabox.com"
-        },
-        subtitles: []
-      };
     }
+
+    // Fallback: devolver la URL original con headers
+    return {
+      type: "mp4",
+      url: url,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+        "Referer": "https://www.terabox.com/",
+        "Origin": "https://www.terabox.com"
+      },
+      subtitles: []
+    };
   }
 }
