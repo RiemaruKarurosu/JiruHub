@@ -2027,5 +2027,18 @@
     "url": "https://raw.githubusercontent.com/jephersonRD/JiruHub/main/extensions/zeroscans.com.js",
     "version": "v0.0.2",
     "webSite": "https://zscans.com"
+  },
+  {
+    "author": "jephMD",
+    "icon": "https://raw.githubusercontent.com/jephersonRD/JiruHub/main/icons/app.png",
+    "lang": "es",
+    "license": "MIT",
+    "name": "JiruHub Latino",
+    "package": "jiruhublatino",
+    "type": "bangumi",
+    "url": "https://raw.githubusercontent.com/jephersonRD/JiruHub/main/extensions/jiruhublatino.js",
+    "version": "v0.1.0",
+    "webSite": "https://github.com/jephersonRD/JiruHub",
+    "description": "Anime en espanol latino via Terabox - Cyberpunk, Zom 100, Tsukimichi"
   }
 ]
