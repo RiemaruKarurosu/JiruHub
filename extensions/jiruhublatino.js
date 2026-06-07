@@ -1,6 +1,6 @@
 // ==MiruExtension==
 // @name         JiruHub Latino
-// @version      v0.1.1
+// @version      v0.3.2
 // @author       jephMD
 // @lang         es
 // @license      MIT
@@ -13,11 +13,58 @@
 
 const API_URL = "https://raw.githubusercontent.com/jephersonRD/JiruHub/main/extensions/anime_db.json";
 const PAGE_SIZE = 20;
+const COOKIE_FILE = "/home/jeph/Downloads/l/cookies-terabox-com.txt";
+
+function sha1_raw(bytes) {
+  var h = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
+  var ml = bytes.length * 8;
+  var p = bytes.slice();
+  p.push(0x80);
+  while ((p.length * 8) % 512 !== 448) p.push(0);
+  p.push(0, 0, 0, 0);
+  p.push((ml >>> 24) & 0xff, (ml >>> 16) & 0xff, (ml >>> 8) & 0xff, ml & 0xff);
+  var w = new Array(80);
+  for (var bi = 0; bi < p.length; bi += 64) {
+    for (var i = 0; i < 16; i++) w[i] = ((p[bi + i * 4] << 24) | (p[bi + i * 4 + 1] << 16) | (p[bi + i * 4 + 2] << 8) | p[bi + i * 4 + 3]) >>> 0;
+    for (var i = 16; i < 80; i++) w[i] = ((w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]) << 1 | (w[i - 3] ^ w[i - 8] ^ w[i - 14] ^ w[i - 16]) >>> 31) >>> 0;
+    var a = h[0], B = h[1], c = h[2], d = h[3], e = h[4];
+    for (var i = 0; i < 80; i++) {
+      var f, k;
+      if (i < 20) { f = (B & c) | ((~B) & d); k = 0x5a827999; }
+      else if (i < 40) { f = B ^ c ^ d; k = 0x6ed9eba1; }
+      else if (i < 60) { f = (B & c) | (B & d) | (c & d); k = 0x8f1bbcdc; }
+      else { f = B ^ c ^ d; k = 0xca62c1d6; }
+      var temp = ((a << 5) | (a >>> 27)) + f + e + k + (w[i] >>> 0) >>> 0;
+      e = d; d = c; c = ((B << 30) | (B >>> 2)) >>> 0; B = a; a = temp;
+    }
+    h[0] = (h[0] + a) >>> 0; h[1] = (h[1] + B) >>> 0; h[2] = (h[2] + c) >>> 0; h[3] = (h[3] + d) >>> 0; h[4] = (h[4] + e) >>> 0;
+  }
+  var out = [];
+  for (var i = 0; i < 5; i++) { out.push((h[i] >>> 24) & 0xff, (h[i] >>> 16) & 0xff, (h[i] >>> 8) & 0xff, h[i] & 0xff); }
+  return out;
+}
+
+function hmacSha1Hex(key, msg) {
+  var kb = [];
+  for (var i = 0; i < key.length; i++) kb.push(key.charCodeAt(i) & 0xff);
+  if (kb.length > 64) kb = sha1_raw(kb);
+  while (kb.length < 64) kb.push(0);
+  var ipad = kb.map(function(b) { return b ^ 0x36; });
+  var opad = kb.map(function(b) { return b ^ 0x5c; });
+  var mb = [];
+  for (var i = 0; i < msg.length; i++) mb.push(msg.charCodeAt(i) & 0xff);
+  var inner = sha1_raw(ipad.concat(mb));
+  var outer = sha1_raw(opad.concat(inner));
+  var hex = "";
+  for (var i = 0; i < outer.length; i++) hex += ("0" + outer[i].toString(16)).slice(-2);
+  return hex;
+}
 
 export default class extends Extension {
   constructor() {
     super();
     this.animeList = null;
+    this._cookiesLoaded = false;
   }
 
   async load() {
@@ -30,6 +77,18 @@ export default class extends Extension {
     } catch {
       this.animeList = [];
       return this.animeList;
+    }
+  }
+
+  async _ensureCookies() {
+    if (this._cookiesLoaded) return;
+    try {
+      const count = await this.loadCookieFile(COOKIE_FILE);
+      if (count > 0) {
+        this._cookiesLoaded = true;
+      }
+    } catch (e) {
+      console.log("[Cookies] Error loading: " + String(e));
     }
   }
 
@@ -85,79 +144,89 @@ export default class extends Extension {
   }
 
   async watch(url) {
-    // Si la URL ya termina en .mp4, usarla directamente
     if (url.endsWith(".mp4")) {
       return {
         type: "mp4",
         url: url,
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-          "Referer": "https://www.terabox.com/",
-          "Origin": "https://www.terabox.com"
+          "Referer": "https://www.1024terabox.com/",
+          "Origin": "https://www.1024terabox.com"
         },
         subtitles: []
       };
     }
 
-    // Extraer surl de la URL de Terabox
+    await this._ensureCookies();
+
     const surlMatch = url.match(/\/s\/([a-zA-Z0-9_-]+)/);
     const surl = surlMatch ? surlMatch[1] : null;
 
     if (surl) {
       try {
-        // Paso 1: Obtener la lista de archivos del share link
-        const listUrl = "https://www.1024terabox.com/share/list?app_id=250528&channel=dubox&clienttype=0&web=1&surl=" + surl + "&page=1&num=100&order=time&desc=1&showempty=0";
-        const listRaw = await this.request(listUrl);
-        const listData = typeof listRaw === "string" ? JSON.parse(listRaw) : listRaw;
+        // Paso 1: Obtener metadata del archivo
+        const infoUrl = "/api/shorturlinfo?shorturl=" + surl + "&root=1&app_id=250528&web=1&channel=dubox&clienttype=0";
+        const infoRaw = await this.request(infoUrl);
+        const infoData = typeof infoRaw === "string" ? JSON.parse(infoRaw) : infoRaw;
 
-        if (listData && listData.errno === 0 && Array.isArray(listData.list) && listData.list.length > 0) {
-          const file = listData.list[0];
+        if (infoData && infoData.errno === 0 && Array.isArray(infoData.list) && infoData.list.length > 0) {
+          const file = infoData.list[0];
           const fsId = file.fs_id;
+          const shareid = infoData.shareid;
+          const uk = infoData.uk;
 
-          // Paso 2: Obtener la URL de descarga directa
-          const dlUrl = "https://www.1024terabox.com/share/download?app_id=250528&channel=dubox&clienttype=0&web=1&surl=" + surl + "&fs_id=" + fsId;
-          const dlRaw = await this.request(dlUrl);
-          const dlData = typeof dlRaw === "string" ? JSON.parse(dlRaw) : dlRaw;
+          console.log("[Terabox] File: " + file.server_filename + " | shareid=" + shareid + " uk=" + uk);
 
-          if (dlData && dlData.errno === 0 && dlData.dlink) {
-            let videoUrl = dlData.dlink;
-            if (videoUrl.startsWith("//")) videoUrl = "https:" + videoUrl;
-            return {
-              type: videoUrl.includes(".m3u8") ? "hls" : "mp4",
-              url: videoUrl,
-              headers: {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-                "Referer": "https://www.terabox.com/",
-                "Origin": "https://www.terabox.com"
-              },
-              subtitles: []
-            };
+          // Obtener cookies (getCookie devuelve TODAS las cookies como string)
+          const cookieStr = await this.getCookie("browserid");
+          if (!cookieStr) {
+            console.log("[Terabox] No hay cookies disponibles");
+            return { type: "mp4", url: "error://no-cookies", headers: {}, subtitles: [] };
           }
-        }
 
-        if (listData && listData.errno === 2) {
+          // Extraer solo el valor de browserid para la firma
+          const bidMatch = cookieStr.match(/browserid=([^;]+)/);
+          const browserid = bidMatch ? bidMatch[1] : null;
+          if (!browserid) {
+            console.log("[Terabox] No se encontró browserid en las cookies");
+            return { type: "mp4", url: "error://no-browserid-value", headers: {}, subtitles: [] };
+          }
+
+          // Generar firma HMAC-SHA1
+          const ts = Math.floor(Date.now() / 1000);
+          const signInput = "0dubox" + browserid + ts;
+          const hmacKey = "iuuPc64E4Fhn0rTXEzrnbLph0o5qyEEa";
+          const sign = hmacSha1Hex(hmacKey, signInput);
+
+          // Construir URL de streaming
+          const fullUrl = "https://www.1024terabox.com/share/streaming?uk=" + uk + "&shareid=" + shareid + "&type=M3U8_FLV_264_360&fid=" + fsId + "&sign=" + sign + "&timestamp=" + ts + "&esl=1&isplayer=1&ehps=1&clienttype=0&app_id=250528&web=1&channel=dubox";
+
+          console.log("[Terabox] Streaming URL generated, sign=" + sign.substring(0, 10) + "...");
+
           return {
-            type: "mp4",
-            url: "error://terabox-needs-login",
+            type: "hls",
+            url: fullUrl,
             headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+              "Referer": "https://www.1024terabox.com/",
+              "Origin": "https://www.1024terabox.com",
+              "Cookie": cookieStr
             },
             subtitles: []
           };
         }
       } catch (e) {
-        this.log && this.log("Error API Terabox: " + String(e));
+        console.log("Error API Terabox: " + String(e));
       }
     }
 
-    // Fallback: devolver la URL original con headers
     return {
       type: "mp4",
       url: url,
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-        "Referer": "https://www.terabox.com/",
-        "Origin": "https://www.terabox.com"
+        "Referer": "https://www.1024terabox.com/",
+        "Origin": "https://www.1024terabox.com"
       },
       subtitles: []
     };
