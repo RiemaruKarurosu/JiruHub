@@ -2,7 +2,7 @@
 # PKGBUILD for JiruHub binary release
 
 pkgname=jiruhub-bin
-pkgver=0.1.0
+pkgver=0.1.2
 pkgrel=1
 pkgdesc="JiruHub - Anime, manga and multimedia player (binary release)"
 arch=('x86_64')

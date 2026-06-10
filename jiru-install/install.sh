@@ -209,27 +209,65 @@ detect_arch() {
     local arch
     arch=$(uname -m)
     case "$arch" in
-        x86_64|amd64) echo "x64" ;;
-        aarch64|arm64) echo "arm64" ;;
-        armv7l)        echo "arm" ;;
-        *)             die "Arquitectura no soportada: $arch" ;;
+        x86_64|amd64)   echo "x64" ;;
+        aarch64|arm64)  echo "arm64" ;;
+        armv7l|armv6l)  echo "arm" ;;
+        i386|i486|i586|i686)
+            error "Arquitectura de 32 bits ($arch) no está soportada por JiruHub."
+            error "JiruHub requiere un sistema de 64 bits (x86_64 o aarch64)."
+            die   "Por favor usa un sistema operativo de 64 bits."
+            ;;
+        *) die "Arquitectura no soportada: $arch" ;;
     esac
 }
 
 # ─── Detección de Distribución ───────────────────────────────────────────────
 detect_distro() {
+    local distro_id="unknown"
     if [[ -f /etc/os-release ]]; then
-        . /etc/os-release
-        echo "$ID" | tr '[:upper:]' '[:lower:]'
-    elif [[ -f /etc/arch-release ]]; then
-        echo "arch"
-    elif [[ -f /etc/debian_version ]]; then
-        echo "debian"
-    elif [[ -f /etc/fedora-release ]]; then
-        echo "fedora"
-    else
-        echo "unknown"
+        local os_id os_id_like
+        os_id=$(grep '^ID=' /etc/os-release | cut -d= -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
+        os_id_like=$(grep '^ID_LIKE=' /etc/os-release | cut -d= -f2 | tr -d '"' | tr '[:upper:]' '[:lower:]')
+        distro_id="${os_id:-unknown}"
+
+        # Normalise known IDs to their package-manager family
+        case "$distro_id" in
+            arch|manjaro|endeavouros|artix|garuda|cachyos|arcolinux|crystal|\
+            hyperbola|parabola|blackarch|archcraft|archlabs) ;; # already fine
+            ubuntu|debian|linuxmint|pop|elementary|zorin|neon|kali|\
+            raspbian|mx|antix|pureos|tails|parrot|deepin|backbox|\
+            vanilla-*) ;; # already fine
+            fedora|rhel|centos|rocky|alma|nobara|ultramarine|mageia|\
+            openmandriva|springdale) ;; # already fine
+            opensuse*|suse*) distro_id="opensuse" ;;
+            void) ;;
+            alpine) ;;
+            gentoo|funtoo) distro_id="gentoo" ;;
+            nixos) distro_id="nixos" ;;
+            solus) ;;
+            *)
+                # Fallback: look at ID_LIKE to find the package-manager family
+                for like in $os_id_like; do
+                    case "$like" in
+                        arch)   distro_id="arch"   ; break ;;
+                        debian|ubuntu) distro_id="debian" ; break ;;
+                        fedora|rhel)   distro_id="fedora" ; break ;;
+                        opensuse|suse) distro_id="opensuse" ; break ;;
+                        void)   distro_id="void"   ; break ;;
+                        alpine) distro_id="alpine" ; break ;;
+                        gentoo) distro_id="gentoo" ; break ;;
+                    esac
+                done
+                ;;
+        esac
+    elif [[ -f /etc/arch-release ]];   then distro_id="arch"
+    elif [[ -f /etc/debian_version ]]; then distro_id="debian"
+    elif [[ -f /etc/fedora-release ]]; then distro_id="fedora"
+    elif [[ -f /etc/void-release ]];   then distro_id="void"
+    elif [[ -f /etc/alpine-release ]]; then distro_id="alpine"
+    elif [[ -f /etc/gentoo-release ]]; then distro_id="gentoo"
     fi
+    echo "$distro_id"
 }
 
 # ─── Gestión de Dependencias ──────────────────────────────────────────────
@@ -243,32 +281,76 @@ check_dependencies() {
     local -a pkg_install=()
 
     case "$distro" in
-        arch|manjaro|endeavouros|artix|garuda)
-            pkg_names=("gtk3" "mpv")
-            pkg_check=("pacman -Qs '^gtk3$'" "pacman -Qs '^mpv$'")
-            pkg_install=("sudo pacman -S --noconfirm gtk3" "sudo pacman -S --noconfirm mpv")
+        # ── Arch Linux y derivadas ────────────────────────────────────────────
+        arch|manjaro|endeavouros|artix|garuda|cachyos|arcolinux|crystal|\
+archlabs|archcraft|parabola|hyperbola|blackarch)
+            pkg_names=("gtk3" "mpv" "libx11")
+            pkg_check=("pacman -Qs '^gtk3$'" "pacman -Qs '^mpv$'" "pacman -Qs '^libx11$'")
+            pkg_install=("sudo pacman -S --noconfirm gtk3" "sudo pacman -S --noconfirm mpv" "sudo pacman -S --noconfirm libx11")
             ;;
-        debian|ubuntu|linuxmint|pop|elementary|zorin|neon|kali)
-            pkg_names=("libgtk-3-0" "mpv")
-            pkg_check=("dpkg -s libgtk-3-0 2>/dev/null" "dpkg -s mpv 2>/dev/null")
-            pkg_install=("sudo apt-get install -y libgtk-3-0" "sudo apt-get install -y mpv")
+        # ── Debian / Ubuntu y derivadas ───────────────────────────────────────
+        debian|ubuntu|linuxmint|pop|elementary|zorin|neon|kali|\
+raspbian|mx|antix|pureos|tails|parrot|deepin|backbox)
+            pkg_names=("libgtk-3-0" "mpv" "libx11-6")
+            pkg_check=("dpkg -s libgtk-3-0 2>/dev/null" "dpkg -s mpv 2>/dev/null" "dpkg -s libx11-6 2>/dev/null")
+            pkg_install=("sudo apt-get install -y libgtk-3-0" "sudo apt-get install -y mpv" "sudo apt-get install -y libx11-6")
             ;;
-        fedora|rhel|centos|rocky|alma)
+        # ── Fedora / RHEL y derivadas ─────────────────────────────────────────
+        fedora|rhel|centos|rocky|alma|nobara|ultramarine|mageia|openmandriva)
             pkg_names=("gtk3" "mpv")
             pkg_check=("rpm -q gtk3 2>/dev/null" "rpm -q mpv 2>/dev/null")
             pkg_install=("sudo dnf install -y gtk3" "sudo dnf install -y mpv")
             ;;
-        suse|opensuse*)
-            pkg_names=("gtk3" "mpv")
-            pkg_check=("rpm -q gtk3 2>/dev/null" "rpm -q mpv 2>/dev/null")
-            pkg_install=("sudo zypper install -y gtk3 mpv")
+        # ── openSUSE ──────────────────────────────────────────────────────────
+        opensuse|suse)
+            pkg_names=("libgtk-3-0" "mpv")
+            pkg_check=("rpm -q libgtk-3-0 2>/dev/null" "rpm -q mpv 2>/dev/null")
+            pkg_install=("sudo zypper install -y libgtk-3-0 mpv")
             ;;
+        # ── Void Linux ────────────────────────────────────────────────────────
+        void)
+            pkg_names=("gtk+3" "mpv")
+            pkg_check=("xbps-query gtk+3 2>/dev/null" "xbps-query mpv 2>/dev/null")
+            pkg_install=("sudo xbps-install -Sy gtk+3" "sudo xbps-install -Sy mpv")
+            ;;
+        # ── Alpine Linux ──────────────────────────────────────────────────────
+        alpine)
+            pkg_names=("gtk+3.0" "mpv")
+            pkg_check=("apk info gtk+3.0 2>/dev/null" "apk info mpv 2>/dev/null")
+            pkg_install=("sudo apk add --no-cache gtk+3.0" "sudo apk add --no-cache mpv")
+            ;;
+        # ── Gentoo / Funtoo ───────────────────────────────────────────────────
+        gentoo)
+            pkg_names=("x11-libs/gtk+" "media-video/mpv")
+            pkg_check=("equery list gtk+ 2>/dev/null" "equery list mpv 2>/dev/null")
+            pkg_install=("sudo emerge -av x11-libs/gtk+" "sudo emerge -av media-video/mpv")
+            ;;
+        # ── Solus ─────────────────────────────────────────────────────────────
+        solus)
+            pkg_names=("libgtk-3" "mpv")
+            pkg_check=("eopkg info libgtk-3 2>/dev/null" "eopkg info mpv 2>/dev/null")
+            pkg_install=("sudo eopkg install -y libgtk-3" "sudo eopkg install -y mpv")
+            ;;
+        # ── NixOS ─────────────────────────────────────────────────────────────
+        nixos)
+            print ""
+            warn "NixOS detectado."
+            info "En NixOS instala las dependencias con nix-env o en configuration.nix:"
+            info "  nix-env -iA nixpkgs.gtk3 nixpkgs.mpv"
+            info "O agrega a configuration.nix: environment.systemPackages = [ pkgs.gtk3 pkgs.mpv ];"
+            print ""
+            read -rp "  $(t dep_skip) [s/N]: " confirm </dev/tty || true
+            print "\n${C_DIM}└──────────────────────────────────────────────────────────────────────────┘${C_RESET}"
+            [[ "$confirm" =~ ^[Ss]$ ]] && return 0 || return 1
+            ;;
+        # ── Distro desconocida ────────────────────────────────────────────────
         *)
             print ""
             warn "$(t dep_distro_unknown)"
             info "$(t dep_manual_list)"
-            info "  • gtk3 (o libgtk-3-0)"
+            info "  • gtk3 (libgtk-3-0 en sistemas Debian/Ubuntu)"
             info "  • mpv"
+            info "  • libx11"
             print ""
             read -rp "  $(t dep_skip) [s/N]: " confirm </dev/tty || true
             print "\n${C_DIM}└──────────────────────────────────────────────────────────────────────────┘${C_RESET}"
