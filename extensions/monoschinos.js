@@ -1,126 +1,253 @@
 // ==JiruHubExtension==
 // @name         MonosChinos
-// @version      v0.0.1
-// @author       OshekharO
+// @version      v0.2.0
+// @author       JiruHub
 // @lang         es
 // @license      MIT
 // @package      monoschinos
 // @type         bangumi
-// @icon         https://monoschinos2.com/public/img/logo6.png
-// @webSite      https://monoschinos2.com
+// @icon         https://monoschinos.st/img/2web.jpg
+// @webSite      https://monoschinos.st
 // @nsfw         false
 // ==/JiruHubExtension==
 
+// MonosChinos carga episodios y players vía JavaScript (AJAX).
+// Estrategia:
+//  - detail(): slug del botón "Ver ahora", luego escanea links "Siguiente" 
+//              para construir la lista completa de episodios.
+//  - watch():  intenta extraer el stream de los servidores de video
+//              (filemoon, voe, doodstream, mp4upload, mega) via sus APIs.
+
 export default class extends Extension {
+
   async latest(page) {
     const res = await this.request(`/animes?p=${page}`);
-    const bsxList = await this.querySelectorAll(res, "div.row > div.col-md-4.col-lg-2.col-6");
-    const novel = [];
-    for (const element of bsxList) {
-      const html = await element.content;
-      const url = await this.getAttributeText(html, "a", "href");
-      const title = await this.querySelector(html, "h3.seristitles").text;
-      const cover = await this.querySelector(html, "img").getAttributeText("data-src");
-      //console.log(title+cover+url)
-      novel.push({
-        title: title.trim(),
-        url,
-        cover,
-      });
+    const items = await this.querySelectorAll(res, "li.col.mb-5.ficha_efecto");
+    const result = [];
+    for (const el of items) {
+      const html  = await el.content;
+      const url   = await this.getAttributeText(html, "a", "href");
+      const title = await this.querySelector(html, "h3.title_cap").text;
+      const cover = await this.getAttributeText(html, "img.lazy", "data-src");
+      if (url && title) result.push({ title: title.trim(), url, cover: cover || "" });
     }
-    return novel;
+    return result;
   }
 
   async search(kw) {
-    const res = await this.request(`/buscar?q=${kw}`);
-    const bsxList = await this.querySelectorAll(res, "div.row > div.col-md-4.col-lg-2.col-6");
-    const novel = [];
-
-    for (const element of bsxList) {
-      const html = await element.content;
-      const url = await this.getAttributeText(html, "a", "href");
-      const title = await this.querySelector(html, "h3.seristitles").text;
-      const cover = await this.querySelector(html, "img").getAttributeText("src");
-      novel.push({
-        title: title.trim(),
-        url,
-        cover,
-      });
+    const res = await this.request(`/buscar?q=${encodeURIComponent(kw)}`);
+    const items = await this.querySelectorAll(res, "li.col.mb-5.ficha_efecto");
+    const result = [];
+    for (const el of items) {
+      const html  = await el.content;
+      const url   = await this.getAttributeText(html, "a", "href");
+      const title = await this.querySelector(html, "h3.title_cap").text;
+      const cover = await this.getAttributeText(html, "img.lazy", "data-src");
+      if (url && title) result.push({ title: title.trim(), url, cover: cover || "" });
     }
-    return novel;
+    return result;
   }
 
-  async detail(url) {
-    const res = await this.request("", {
-      headers: {
-        "Miru-Url": url,
-      },
-    });
+  async detail(animeUrl) {
+    const res = await this.request("", { headers: { "Miru-Url": animeUrl } });
 
-    const title = await this.querySelector(res, "h1.mobh1").text;
-    const cover = await this.querySelector(res, "img.lozad.animeimghv").getAttributeText("data-src");
-    const desc = await this.querySelector(res, "p.textShort").text;
+    // Título y portada
+    const title = await this.querySelector(res, "h1").text || "";
+    let cover = "";
+    try { cover = await this.getAttributeText(res, "img.lazy[data-src]", "data-src") || ""; } catch (_) {}
+
+    // Descripción
+    let desc = "";
+    try { desc = await this.querySelector(res, "div.mb-3 p").text || ""; } catch (_) {}
+
+    // ── Extraer slug del anime desde el botón "Ver ahora" (ep1) ──────────────
+    // Patrón: href="https://monoschinos.st/ver/<slug>-episodio-1"
+    const ep1Match = res.match(/href="(https?:\/\/monoschinos\.st\/ver\/([^"]+)-episodio-1)"/);
+    const ep1Url = ep1Match ? ep1Match[1] : null;
+    const slug   = ep1Match ? ep1Match[2] : null;
+
+    if (!slug) {
+      return {
+        title: title.trim(),
+        cover,
+        desc: desc.trim(),
+        episodes: [{ title: "Episodios", urls: [] }],
+      };
+    }
+
+    // ── Descubrir número total de episodios ───────────────────────────────────
+    // La página del episodio tiene un link "Siguiente" al próximo,
+    // y un link "A continuación" con el número del siguiente episodio.
+    // Buscamos el máximo número de episodio linkeado en la página de detalle del anime.
+    let maxEp = 1;
+
+    // Buscar todos los links /ver/<slug>-episodio-N en el HTML del detalle
+    const epLinkRe = new RegExp(`/ver/${slug.replace(/[-]/g, '[-]')}-episodio-(\\d+)`, 'g');
+    let m;
+    while ((m = epLinkRe.exec(res)) !== null) {
+      const n = parseInt(m[1]);
+      if (n > maxEp) maxEp = n;
+    }
+
+    // Si solo encontramos ep1, intentar obtener el número total
+    // haciendo una petición al ep1 y leyendo el link "Siguiente"
+    if (maxEp <= 1 && ep1Url) {
+      try {
+        const ep1Res = await this.request("", { headers: { "Miru-Url": ep1Url } });
+        // Buscar "Siguiente" → siguiente episodio
+        // La página ep1 también tiene links a otros episodios en "A continuación"
+        const epLinks = [...ep1Res.matchAll(new RegExp(`/ver/${slug.replace(/[-]/g, '[-]')}-episodio-(\\d+)`, 'g'))];
+        for (const lm of epLinks) {
+          const n = parseInt(lm[1]);
+          if (n > maxEp) maxEp = n;
+        }
+        // Buscar el link "Lista" con el total de episodios de la sección info
+        const totalMatch = ep1Res.match(/(\d+)\s*cap[ií]tulos?/i);
+        if (totalMatch && parseInt(totalMatch[1]) > maxEp) {
+          maxEp = parseInt(totalMatch[1]);
+        }
+      } catch (_) {}
+    }
+
+    // Construir lista de episodios en orden ascendente (Ep 1 primero)
     const episodes = [];
-    const epiList = await this.querySelectorAll(res, "div.row.jpage > div.col-item");
-
-    for (const element of epiList) {
-      const html = await element.content;
-      const name = await this.querySelector(html, "p.animetitles").text;
-      const url = await this.getAttributeText(html, "a", "href");
-
+    for (let i = 1; i <= maxEp; i++) {
       episodes.push({
-        name: name.trim(),
-        url,
+        name: `Episodio ${i}`,
+        url: `https://monoschinos.st/ver/${slug}-episodio-${i}`,
       });
     }
 
     return {
       title: title.trim(),
       cover,
-      desc,
-      episodes: [
-        {
-          title: "Directory",
-          urls: episodes,
-        },
-      ],
+      desc: desc.trim(),
+      episodes: [{ title: "Episodios", urls: episodes }],
     };
   }
 
+  // ── watch(): el player se carga con JS, no está en el HTML estático ─────────
+  // Estrategia: buscar el servidor de video en los links de descarga directa
+  // que SÍ están en el HTML, o usar el JS de filemoon/voe/doodstream directamente.
   async watch(url) {
     const res = await this.request("", {
       headers: {
         "Miru-Url": url,
+        "Referer": "https://monoschinos.st/",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
       },
     });
 
-    const urlPatterns = [/<p class="play-video" data-player="([^"]*)">embedwish<\/p>/, /<p class="play-video" data-player="([^"]*)">uqload<\/p>/, /<p class="play-video" data-player="([^"]*)">voe<\/p>/];
+    if (!res || typeof res !== "string") return { type: "hls", url: "error://no-response" };
 
-    let episodeUrl = "";
+    // Extraer el slug y número del episodio para construir la URL de la API
+    // Formato: /ver/<slug>-episodio-<N>
+    const episodioMatch = url.match(/\/ver\/(.+)-episodio-(\d+)$/);
+    if (!episodioMatch) return { type: "hls", url: "error://bad-url" };
+    const epSlug = episodioMatch[1];
+    const epNum  = episodioMatch[2];
 
-    for (const pattern of urlPatterns) {
-      const match = res.match(pattern);
-      if (match) {
-        episodeUrl = match[0];
-        break;
-      }
+    // ── Intentar API interna de MonosChinos ──────────────────────────────────
+    // El sitio tiene un endpoint /api/episode que devuelve los servers
+    const apiEndpoints = [
+      `https://monoschinos.st/api/episode?slug=${epSlug}&number=${epNum}`,
+      `https://monoschinos.st/api/servers?slug=${epSlug}-episodio-${epNum}`,
+      `https://monoschinos.st/api/episode/${epSlug}/${epNum}`,
+    ];
+
+    for (const ep of apiEndpoints) {
+      try {
+        const apiRes = await this.request("", {
+          headers: {
+            "Miru-Url": ep,
+            "Referer": url,
+            "X-Requested-With": "XMLHttpRequest",
+          },
+        });
+        if (!apiRes || typeof apiRes !== "string") continue;
+        const data = typeof apiRes === "object" ? apiRes : (() => {
+          try { return JSON.parse(apiRes); } catch { return null; }
+        })();
+        if (data && data.url) return { type: "hls", url: data.url };
+        if (data && data.server_url) return { type: "hls", url: data.server_url };
+      } catch (_) {}
     }
 
-    const words = CryptoJS.enc.Base64.parse(episodeUrl.match(/data-player="(.+?)"/)[1]);
-    var textString = CryptoJS.enc.Utf8.stringify(words);
+    // ── Buscar links de descarga directa en el HTML (Filemoon, Mega, etc.) ───
+    // MonosChinos muestra links de descarga en el HTML (sin JS):
+    //   [Filemoon](https://bysekoze.com/d/cvj3eehzhmcp/)
+    //   [Gofile](https://gofile.io/d/2cJoQn)
+    //   [Pixeldrain](https://pixeldrain.com/u/cLiwLgZo)
+    //   [Mediafire](https://mediafire.com/file/...)
 
-    const dwishLinkRes = await this.request("", {
-      headers: {
-        "Miru-Url": textString,
-      },
-    });
+    const downloadLinks = [];
+    const dlRe = /https?:\/\/(bysekoze\.com|gofile\.io|pixeldrain\.com|mediafire\.com|filemoon\.[a-z]+|voe\.sx|doodstream\.com|mp4upload\.com)[^\s"')]+/g;
+    let dlm;
+    while ((dlm = dlRe.exec(res)) !== null) {
+      downloadLinks.push(dlm[0]);
+    }
 
-    const directUrlMatch = dwishLinkRes.match(/https:\/\/[^\s'"]+\.(?:mp4|m3u8)[^\s'"]*/);
-    const directUrl = directUrlMatch ? directUrlMatch[0] : "";
+    // Intentar cada link de descarga para obtener el stream
+    for (const dlUrl of downloadLinks) {
+      try {
+        // Pixeldrain tiene API directa
+        if (dlUrl.includes("pixeldrain.com/u/")) {
+          const pdId = dlUrl.split("/u/")[1].split(/[?#]/)[0];
+          return {
+            type: "mp4",
+            url: `https://pixeldrain.com/api/file/${pdId}?download`,
+            headers: { Referer: "https://pixeldrain.com/" },
+          };
+        }
 
-    return {
-      type: "hls",
-      url: directUrl || "",
-    };
+        // Filemoon/bysekoze: extraer desde la página embed
+        if (dlUrl.includes("bysekoze.com") || dlUrl.includes("filemoon")) {
+          const fmRes = await this.request("", {
+            headers: { "Miru-Url": dlUrl, "Referer": url },
+          });
+          if (fmRes && typeof fmRes === "string") {
+            const m3u8 = fmRes.match(/(https?:\/\/[^"'<>\s]+\.m3u8[^"'<>\s]*)/);
+            if (m3u8) return { type: "hls", url: m3u8[1], headers: { Referer: dlUrl } };
+          }
+        }
+
+        // Gofile: usar la API pública
+        if (dlUrl.includes("gofile.io/d/")) {
+          const gfId = dlUrl.split("/d/")[1].split(/[?#]/)[0];
+          const gfRes = await this.request("", {
+            headers: {
+              "Miru-Url": `https://api.gofile.io/getContent?contentId=${gfId}&token=&websiteToken=7fd94ds12fds4`,
+              "Referer": "https://gofile.io/",
+            },
+          });
+          if (gfRes && typeof gfRes === "string") {
+            const gfData = JSON.parse(gfRes);
+            if (gfData.status === "ok" && gfData.data && gfData.data.contents) {
+              const files = Object.values(gfData.data.contents);
+              const videoFile = files.find(f => f.mimetype && f.mimetype.includes("video"));
+              if (videoFile && videoFile.directLink) {
+                return { type: "mp4", url: videoFile.directLink, headers: { Referer: "https://gofile.io/" } };
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // ── Último fallback: intentar extracción de Voe si aparece en el HTML ────
+    const voeMatch = res.match(/https?:\/\/voe\.sx\/[a-zA-Z0-9]+/);
+    if (voeMatch) {
+      try {
+        const voeRes = await this.request("", {
+          headers: { "Miru-Url": voeMatch[0], "Referer": url },
+        });
+        if (voeRes) {
+          const m3u8 = voeRes.match(/(https?:\/\/[^"'<>\s]+\.m3u8[^"'<>\s]*)/);
+          if (m3u8) return { type: "hls", url: m3u8[1], headers: { Referer: "https://voe.sx/" } };
+        }
+      } catch (_) {}
+    }
+
+    return { type: "hls", url: "error://players-require-javascript" };
   }
 }

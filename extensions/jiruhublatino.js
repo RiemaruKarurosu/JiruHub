@@ -1,6 +1,6 @@
 // ==MiruExtension==
 // @name         JiruHub Latino
-// @version      v0.3.2
+// @version      v0.3.4
 // @author       jephMD
 // @lang         es
 // @license      MIT
@@ -13,7 +13,28 @@
 
 const API_URL = "https://raw.githubusercontent.com/jephersonRD/JiruHub/main/extensions/anime_db.json";
 const PAGE_SIZE = 20;
-const COOKIE_FILE = "/home/jeph/Downloads/l/cookies-terabox-com.txt";
+
+// ── Credenciales Terabox embebidas ─────────────────────────────────────────────
+// Permiten reproducir sin que el usuario tenga que iniciar sesión.
+// La extensión primero intenta las cookies propias del usuario (via getCookie),
+// y si no existen usa estas credenciales compartidas automáticamente.
+const _TB_BROWSERID  = "f3lSz4SO7FJXE976igfrrFrHKTeWOD9nm1jHBIhZO54VDCwWQotBL4RQBAY=";
+const _TB_NDUS       = "YVNSEixteHui_k6a80v4Fx9XOCXArSUsYv88dmW9";
+const _TB_CSRF       = "SkgQp-D4uG6lOHvrA8wPon_n";
+const _TB_NDUT_FMT   = "E77AFA38699B6BD301C94607771C65ED237DAF8B295D96144AA4804099762763";
+const _TB_NDUT_FMV   = "24ec792dd5362ccdf87a18a3d015ca10adbbc65b68138f2368d0a1bdfd707550806968ab2d4d8ccd9c70663762f899afc3265a5022725df5f3609e35fe460da873b949971e174f755da282e922f592e5cacb45d9779dccf5d59c8633ddbe130abe4a26f6d7a4f87e5443f5e5ecc4a0ff";
+const _TB_AB_SR      = "1.0.1_MGRlYzc0MzJlNGQ0Y2M3ZDIxYzhkN2FhODQzN2EzYTg0MDkxYjEwNmEwOTc1ZDk3ODdmZjY0NGRlZDZiMDNlNDhkZTc0MTEyNTJiZWQ3NTA0YzU3NDhhZmJjNzg5NGYyYWQzY2E3NWEyYjY2OGY5OTM4NzllNTY4MzNiNzBiYzZkMTAyZTAwZGIwMjMwYmI3NzBkYTQ0ZTA3NDFjOGZlNA==";
+// Cookie string listo para usar en cabeceras HTTP
+const _TB_COOKIE_STR = [
+  "browserid="  + _TB_BROWSERID,
+  "ndus="       + _TB_NDUS,
+  "csrfToken="  + _TB_CSRF,
+  "ndut_fmt="   + _TB_NDUT_FMT,
+  "ndut_fmv="   + _TB_NDUT_FMV,
+  "ab_sr="      + _TB_AB_SR,
+  "lang=en"
+].join("; ");
+// ──────────────────────────────────────────────────────────────────────────────
 
 function sha1_raw(bytes) {
   var h = [0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0];
@@ -64,7 +85,6 @@ export default class extends Extension {
   constructor() {
     super();
     this.animeList = null;
-    this._cookiesLoaded = false;
   }
 
   async load() {
@@ -77,18 +97,6 @@ export default class extends Extension {
     } catch {
       this.animeList = [];
       return this.animeList;
-    }
-  }
-
-  async _ensureCookies() {
-    if (this._cookiesLoaded) return;
-    try {
-      const count = await this.loadCookieFile(COOKIE_FILE);
-      if (count > 0) {
-        this._cookiesLoaded = true;
-      }
-    } catch (e) {
-      console.log("[Cookies] Error loading: " + String(e));
     }
   }
 
@@ -143,7 +151,36 @@ export default class extends Extension {
     return { title: anime.title, cover: anime.cover, desc: anime.description || "", episodes: episodesOut };
   }
 
+  // Obtiene las credenciales Terabox:
+  // 1) Intenta las cookies propias del usuario desde el cookie jar de la app
+  // 2) Si no existen, usa las credenciales embebidas en la extensión
+  async _getTeraboxCreds() {
+    let cookieStr = null;
+    let browserid = _TB_BROWSERID; // fallback embebido
+
+    try {
+      const jarCookie = await this.getCookie("browserid");
+      if (jarCookie && jarCookie.length > 10) {
+        cookieStr = jarCookie;
+        // Extraer el valor de browserid del string del cookie jar
+        const bidMatch = jarCookie.match(/browserid=([^;]+)/);
+        if (bidMatch) browserid = bidMatch[1].trim();
+        console.log("[Terabox] Usando cookies del usuario");
+      }
+    } catch (_) {}
+
+    // Si no hay cookies del usuario, usar las embebidas
+    if (!cookieStr) {
+      cookieStr = _TB_COOKIE_STR;
+      browserid = _TB_BROWSERID;
+      console.log("[Terabox] Usando credenciales embebidas");
+    }
+
+    return { cookieStr, browserid };
+  }
+
   async watch(url) {
+    // URL directa de MP4 — reproducir sin procesamiento extra
     if (url.endsWith(".mp4")) {
       return {
         type: "mp4",
@@ -151,82 +188,87 @@ export default class extends Extension {
         headers: {
           "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
           "Referer": "https://www.1024terabox.com/",
-          "Origin": "https://www.1024terabox.com"
+          "Origin": "https://www.1024terabox.com",
+          "Cookie": _TB_COOKIE_STR
         },
         subtitles: []
       };
     }
-
-    await this._ensureCookies();
 
     const surlMatch = url.match(/\/s\/([a-zA-Z0-9_-]+)/);
     const surl = surlMatch ? surlMatch[1] : null;
 
     if (surl) {
       try {
-        // Paso 1: Obtener metadata del archivo
+        const { cookieStr, browserid } = await this._getTeraboxCreds();
+
+        // Paso 1: Metadata del archivo via API de Terabox
         const infoUrl = "/api/shorturlinfo?shorturl=" + surl + "&root=1&app_id=250528&web=1&channel=dubox&clienttype=0";
-        const infoRaw = await this.request(infoUrl);
+        const infoRaw = await this.request(infoUrl, {
+          headers: {
+            "Cookie": cookieStr,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://www.1024terabox.com/",
+            "Origin": "https://www.1024terabox.com"
+          }
+        });
         const infoData = typeof infoRaw === "string" ? JSON.parse(infoRaw) : infoRaw;
 
         if (infoData && infoData.errno === 0 && Array.isArray(infoData.list) && infoData.list.length > 0) {
-          const file = infoData.list[0];
-          const fsId = file.fs_id;
+          const file    = infoData.list[0];
+          const fsId    = file.fs_id;
           const shareid = infoData.shareid;
-          const uk = infoData.uk;
+          const uk      = infoData.uk;
 
-          console.log("[Terabox] File: " + file.server_filename + " | shareid=" + shareid + " uk=" + uk);
+          console.log("[Terabox] Archivo: " + file.server_filename + " | shareid=" + shareid + " uk=" + uk);
 
-          // Obtener cookies (getCookie devuelve TODAS las cookies como string)
-          const cookieStr = await this.getCookie("browserid");
-          if (!cookieStr) {
-            console.log("[Terabox] No hay cookies disponibles");
-            return { type: "mp4", url: "error://no-cookies", headers: {}, subtitles: [] };
-          }
-
-          // Extraer solo el valor de browserid para la firma
-          const bidMatch = cookieStr.match(/browserid=([^;]+)/);
-          const browserid = bidMatch ? bidMatch[1] : null;
-          if (!browserid) {
-            console.log("[Terabox] No se encontró browserid en las cookies");
-            return { type: "mp4", url: "error://no-browserid-value", headers: {}, subtitles: [] };
-          }
-
-          // Generar firma HMAC-SHA1
-          const ts = Math.floor(Date.now() / 1000);
+          // Paso 2: Generar firma HMAC-SHA1
+          const ts        = Math.floor(Date.now() / 1000);
           const signInput = "0dubox" + browserid + ts;
-          const hmacKey = "iuuPc64E4Fhn0rTXEzrnbLph0o5qyEEa";
-          const sign = hmacSha1Hex(hmacKey, signInput);
+          const hmacKey   = "iuuPc64E4Fhn0rTXEzrnbLph0o5qyEEa";
+          const sign      = hmacSha1Hex(hmacKey, signInput);
 
-          // Construir URL de streaming
-          const fullUrl = "https://www.1024terabox.com/share/streaming?uk=" + uk + "&shareid=" + shareid + "&type=M3U8_FLV_264_360&fid=" + fsId + "&sign=" + sign + "&timestamp=" + ts + "&esl=1&isplayer=1&ehps=1&clienttype=0&app_id=250528&web=1&channel=dubox";
+          // Paso 3: Construir URL de streaming HLS
+          const streamUrl = "https://www.1024terabox.com/share/streaming"
+            + "?uk="         + uk
+            + "&shareid="    + shareid
+            + "&type=M3U8_FLV_264_360"
+            + "&fid="        + fsId
+            + "&sign="       + sign
+            + "&timestamp="  + ts
+            + "&esl=1&isplayer=1&ehps=1&clienttype=0&app_id=250528&web=1&channel=dubox";
 
-          console.log("[Terabox] Streaming URL generated, sign=" + sign.substring(0, 10) + "...");
+          console.log("[Terabox] URL de stream generada, sign=" + sign.substring(0, 10) + "...");
 
           return {
             type: "hls",
-            url: fullUrl,
+            url: streamUrl,
             headers: {
               "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-              "Referer": "https://www.1024terabox.com/",
-              "Origin": "https://www.1024terabox.com",
-              "Cookie": cookieStr
+              "Referer":    "https://www.1024terabox.com/",
+              "Origin":     "https://www.1024terabox.com",
+              "Cookie":     cookieStr
             },
             subtitles: []
           };
+        } else {
+          const errno = infoData ? infoData.errno : "desconocido";
+          console.log("[Terabox] API error errno=" + errno);
         }
       } catch (e) {
-        console.log("Error API Terabox: " + String(e));
+        console.log("[Terabox] Error: " + String(e));
       }
     }
 
+    // Fallback: devolver URL tal cual con cookies embebidas
     return {
       type: "mp4",
       url: url,
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-        "Referer": "https://www.1024terabox.com/",
-        "Origin": "https://www.1024terabox.com"
+        "Referer":    "https://www.1024terabox.com/",
+        "Origin":     "https://www.1024terabox.com",
+        "Cookie":     _TB_COOKIE_STR
       },
       subtitles: []
     };

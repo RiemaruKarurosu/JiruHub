@@ -1,6 +1,6 @@
 // ==JiruHubExtension==
 // @name         TioAnime
-// @version      v0.1.6
+// @version      v0.1.7
 // @author       JiruHub
 // @lang         es
 // @license      MIT
@@ -59,8 +59,10 @@ export default class extends Extension {
     const res = await this.req(url);
     if (!res) return { title: "", cover: "", desc: "", episodes: [] };
     const cover = res.image ? (res.image.url || res.image) : "";
-    const episodes = (res.episodes || []).slice().reverse().map((ep) => ({
-      name: `Ep ${ep.number}`,
+    // TioAnime API devuelve: { num: 7, name: "Dandelion Capitulo 7", url: "..." }
+    // Ya vienen ordenados desc (7,6,5...) — no necesitamos reverse()
+    const episodes = (res.episodes || []).map((ep) => ({
+      name: ep.name || (ep.num != null ? `Ep ${ep.num}` : (ep.number != null ? `Ep ${ep.number}` : "Ep ?")),
       url: ep.url,
     }));
     return {
@@ -224,75 +226,74 @@ export default class extends Extension {
     if (embedUrl.includes("netu.tv"))
       mirrors.push(embedUrl.replace("netu.tv", "hqq.tv"));
 
-    const userAgents = [
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
-    ];
+    const ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
     for (const mirrorUrl of mirrors) {
-      for (const ua of userAgents) {
-        let html;
-        try {
-          html = await this.request("", {
-            headers: {
-              "Miru-Url": mirrorUrl,
-              "Referer": "https://tioanime.com",
-              "User-Agent": ua,
-              "Accept": "text/html,application/xhtml+xml,*/*",
-            },
-          });
-        } catch (_) { continue; }
+      let html;
+      try {
+        html = await this.request("", {
+          headers: {
+            "Miru-Url": mirrorUrl,
+            "Referer": "https://tioanime.com",
+            "User-Agent": ua,
+            "Accept": "text/html,application/xhtml+xml,*/*",
+            "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+          },
+        });
+      } catch (_) { continue; }
 
-        if (!html || typeof html !== "string" || html.length < 100) continue;
+      if (!html || typeof html !== "string" || html.length < 100) continue;
 
-        // Buscar TODOS los patrones de URL de video en la página HQQ
-        // HQQ usa múltiples formatos dependiendo de la versión del player
-        const patterns = [
-          /'(https?:\/\/[^']+\.m3u8[^']*)'/g,
-          /"(https?:\/\/[^"]+\.m3u8[^"]*)"/g,
-          /file:\s*["']?(https?:\/\/[^"'<>\s]+\.m3u8[^"'<>\s]*)/g,
-          /source\s*[=:]\s*["']?(https?:\/\/[^"'<>\s]+\.m3u8[^"'<>\s]*)/g,
-          /url:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)/g,
-          // También MP4 directo como fallback
-          /'(https?:\/\/[^']+\.mp4[^']*)'/g,
-          /"(https?:\/\/[^"]+\.mp4[^"]*)"/g,
-        ];
+      // Buscar TODOS los patrones de URL de video en la página HQQ
+      const patterns = [
+        /'(https?:\/\/[^']+\.m3u8[^']*)'/g,
+        /"(https?:\/\/[^"]+\.m3u8[^"]*)"/g,
+        /file:\s*["']?(https?:\/\/[^"'<>\s]+\.m3u8[^"'<>\s]*)/g,
+        /source\s*[=:]\s*["']?(https?:\/\/[^"'<>\s]+\.m3u8[^"'<>\s]*)/g,
+        /url:\s*["'](https?:\/\/[^"']+\.m3u8[^"']*)/g,
+        // MP4 directo como fallback
+        /'(https?:\/\/[^']+\.mp4[^']*)'/g,
+        /"(https?:\/\/[^"]+\.mp4[^"]*)"/g,
+      ];
 
-        const found = [];
-        const seen = new Set();
-        for (const pattern of patterns) {
-          let m;
-          const re = new RegExp(pattern.source, "g");
-          while ((m = re.exec(html)) !== null) {
-            const u = m[1].replace(/\\/g, "");
-            if (!seen.has(u) &&
-                !u.includes("undefined") &&
-                !u.includes("null") &&
-                u.startsWith("http")) {
-              seen.add(u);
-              found.push(u);
-            }
+      const found = [];
+      const seen = new Set();
+      for (const pattern of patterns) {
+        let m;
+        const re = new RegExp(pattern.source, "g");
+        while ((m = re.exec(html)) !== null) {
+          const u = m[1].replace(/\\/g, "");
+          if (!seen.has(u) &&
+              !u.includes("undefined") &&
+              !u.includes("null") &&
+              u.startsWith("http")) {
+            seen.add(u);
+            found.push(u);
           }
         }
-
-        if (found.length === 0) continue;
-
-        // Retornar la primera URL + las demás como alternativas
-        const primary = found[0];
-        const result = {
-          type: "hls",
-          url: primary,
-          headers: {
-            Referer: "https://hqq.tv/",
-            "User-Agent": ua,
-          },
-        };
-        // Inyectar alternativas si hay más de una
-        if (found.length > 1) {
-          result.headers["X-Netu-Alts"] = JSON.stringify(found.slice(1));
-        }
-        return result;
       }
+
+      if (found.length === 0) continue;
+
+      const primary = found[0];
+      // Determinar el Referer correcto según el dominio del CDN
+      const cdnReferer = primary.includes("cfglobalcdn.com") || primary.includes("netu") || primary.includes("hqq")
+        ? "https://hqq.tv/"
+        : "https://tioanime.com/";
+
+      const result = {
+        type: "hls",
+        url: primary,
+        headers: {
+          "Referer":    cdnReferer,
+          "Origin":     cdnReferer.replace(/\/$/, ""),
+          "User-Agent": ua,
+        },
+      };
+      if (found.length > 1) {
+        result.headers["X-Netu-Alts"] = JSON.stringify(found.slice(1));
+      }
+      return result;
     }
 
     return { type: "hls", url: "error://extraction-failed" };
