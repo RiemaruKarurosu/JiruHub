@@ -77,15 +77,15 @@
         "webSite":  "https://anilibria.top/api/v1"
     },
     {
-        "author":  "(koikiss-dev)",
+        "author":  "JiruHub",
         "description":  "Anime en espaÃ±ol Latino vÃ­a TioAnime",
         "icon":  "https://tioanime.com/favicon.ico",
         "lang":  "es",
         "license":  "MIT",
         "name":  "TioAnime",
-        "package":  "anime.flv",
+        "package":  "tioanime",
         "type":  "bangumi",
-        "url":  "https://raw.githubusercontent.com/jephersonRD/JiruHub/main/extensions/anime.flv.js",
+        "url":  "https://raw.githubusercontent.com/jephersonRD/JiruHub/main/extensions/tioanime.js",
         "version":  "v0.1.7",
         "webSite":  "https://jimov-api.vercel.app"
     },
