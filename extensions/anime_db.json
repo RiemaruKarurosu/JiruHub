@@ -1,289 +1,162 @@
-{
-  "version": "0.1.0",
-  "updated": "2026-06-07T18:08:56Z",
-  "animes": [
-    {
-      "id": "zom-100",
-      "title": "Zom 100: Zombie ni Naru Made ni Shitai 100 no Koto",
-      "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx159831-cJUNqCqzuApc.png",
-      "description": "Despues de anos siendo un esclavo corporativo, Akira vive en un departamento lleno de basura, tiene un sueldo pesimo y ni siquiera puede confesarle su amor a su companera. Pero cuando un apocalipsis zombie arrasa su ciudad, le da el empujon que necesita para vivir para si mismo. Ahora Akira esta en una mision para completar las 100 cosas en su lista de deseos antes de... bueno, morir. (Fuente: VIZ Media)",
-      "genres": "Action, Adventure, Comedy, Horror, Supernatural",
-      "episodes": [
-        {
-          "title": "Capitulos",
-          "urls": [
-            {
-              "name": "Capitulo 01",
-              "url": "https://1024terabox.com/s/1YN9Dl6o2yrwr6c924FZDNg"
-            },
-            {
-              "name": "Capitulo 02",
-              "url": "https://1024terabox.com/s/14r11B8q-yHMj9BkR3mQqug"
-            },
-            {
-              "name": "Capitulo 03",
-              "url": "https://1024terabox.com/s/1ut5QfsdZkcJfyjBIS1JuCg"
-            },
-            {
-              "name": "Capitulo 04",
-              "url": "https://1024terabox.com/s/1jo2jspDxsjrgIikpuk0eyA"
-            },
-            {
-              "name": "Capitulo 05",
-              "url": "https://1024terabox.com/s/1TVj2iIsk060A5P0fq0PBbg"
-            },
-            {
-              "name": "Capitulo 06",
-              "url": "https://1024terabox.com/s/1v6cGtitgfde_2r9pAgMRTQ"
-            },
-            {
-              "name": "Capitulo 07",
-              "url": "https://1024terabox.com/s/1dpJbpo6Zo0WSNupDYG5Gxg"
-            },
-            {
-              "name": "Capitulo 08",
-              "url": "https://1024terabox.com/s/1bg08Zq7-FAEwo9AotmmIGA"
-            },
-            {
-              "name": "Capitulo 09",
-              "url": "https://1024terabox.com/s/1XzeclUcpPsxgFL2CFmsKMw"
-            },
-            {
-              "name": "Capitulo 10",
-              "url": "https://1024terabox.com/s/10879Jf5A-3FTfJgS1tHkhA"
-            },
-            {
-              "name": "Capitulo 11",
-              "url": "https://1024terabox.com/s/16JT94sKtSJLMbNcqV-reOA"
-            },
-            {
-              "name": "Capitulo 12",
-              "url": "https://1024terabox.com/s/10FEiDOTjiNvWEiKwhXqbtA"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "cyberpunk-edgerunners",
-      "title": "Cyberpunk: Edgerunners",
-      "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx120377-ayZPoxiWt4Li.jpg",
-      "description": "Una serie de anime original ambientada en el universo de Cyberpunk 2077. Cyberpunk: Edgerunners cuenta una historia independiente de 10 episodios sobre un chico callejero que intenta sobrevivir en una ciudad del futuro obsesionada con la tecnologia y las modificaciones corporales. Con todo por perder, elige seguir vivo convirtiendose en un edgerunner, un mercenario forajido tambien conocido como cyberpunk. (Fuente: CD PROJEKT RED)",
-      "genres": "Action, Drama, Psychological, Sci-Fi",
-      "episodes": [
-        {
-          "title": "Capitulos",
-          "urls": [
-            {
-              "name": "Capitulo 01",
-              "url": "https://1024terabox.com/s/11G9VP6nery0O8J5PiP_vUA"
-            },
-            {
-              "name": "Capitulo 02",
-              "url": "https://1024terabox.com/s/1haNNGfZDxbkNzKxIe1vbpg"
-            },
-            {
-              "name": "Capitulo 03",
-              "url": "https://1024terabox.com/s/1X5bUJCSUH3T8F3bMXh1Sew"
-            },
-            {
-              "name": "Capitulo 04",
-              "url": "https://1024terabox.com/s/1ViV95G2WvKHrygWFvYO-qg"
-            },
-            {
-              "name": "Capitulo 05",
-              "url": "https://1024terabox.com/s/1yLOqm1Lg49cOfgkR6es2lQ"
-            },
-            {
-              "name": "Capitulo 06",
-              "url": "https://1024terabox.com/s/1s5iz_h4hHJbSfEa_DhcZPw"
-            },
-            {
-              "name": "Capitulo 07",
-              "url": "https://1024terabox.com/s/1Tg8xYieKtDVmmYTw9V3Iaw"
-            },
-            {
-              "name": "Capitulo 08",
-              "url": "https://1024terabox.com/s/1oG6YnZbovcQ_z3hyts4PqQ"
-            },
-            {
-              "name": "Capitulo 09",
-              "url": "https://1024terabox.com/s/1BqEygyjkHoJKOEDG_-WPgA"
-            },
-            {
-              "name": "Capitulo 10",
-              "url": "https://1024terabox.com/s/1g1lPF2aHRCSoVjaTP6Wqow"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "tsuki-ga-michibiku-isekai-douchuu",
-      "title": "Tsuki ga Michibiku Isekai Douchuu",
-      "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx125206-O2MsOWdW1lVi.jpg",
-      "description": "Makoto Misumi era un adolescente comun que de repente fue invocado a otro mundo como heroe. Pero la diosa de este mundo lo llamo feo y le quito su estatus de heroe, enviandolo al fin del mundo. En los yermos se encuentra con dragones, aranas, orcos, enanos y muchas otras razas no humanas. Makoto demuestra talento en la magia y el combate, algo que no podia hacer en su mundo anterior. Una fantasia sobre un chico que fue abandonado por los dioses y la humanidad e intenta reiniciar su vida en este nuevo mundo. (Fuente: Crunchyroll)",
-      "genres": "Action, Adventure, Comedy, Fantasy",
-      "episodes": [
-        {
-          "title": "Temporada 1",
-          "urls": [
-            {
-              "name": "Capitulo 01",
-              "url": "https://1024terabox.com/s/1K7Mzb6X0tkC2oplX7ZnEEg"
-            },
-            {
-              "name": "Capitulo 02",
-              "url": "https://1024terabox.com/s/1rtqh69nGt_nz1O70qxbkmQ"
-            },
-            {
-              "name": "Capitulo 03",
-              "url": "https://1024terabox.com/s/1yRUHNQOQICu_ua3L1p7XVAE"
-            },
-            {
-              "name": "Capitulo 04",
-              "url": "https://1024terabox.com/s/1mB8M98ZtIf2cz54qNCSiiw"
-            },
-            {
-              "name": "Capitulo 05",
-              "url": "https://1024terabox.com/s/1cZ-cPhRWF6mCy1MHXhEQRQ"
-            },
-            {
-              "name": "Capitulo 06",
-              "url": "https://1024terabox.com/s/1nJFFuM62SP1-m4FL4g4i6A"
-            },
-            {
-              "name": "Capitulo 07",
-              "url": "https://1024terabox.com/s/1KKikMzy-N86tOi1LDHc7-A"
-            },
-            {
-              "name": "Capitulo 08",
-              "url": "https://1024terabox.com/s/13x5_TaCZveZoxbesRwtkTQ"
-            },
-            {
-              "name": "Capitulo 09",
-              "url": "https://1024terabox.com/s/1enpG3B1iNfrf8sDfLgw5kw"
-            },
-            {
-              "name": "Capitulo 10",
-              "url": "https://1024terabox.com/s/1JSEpdUXpARSBV1FeKSSP_w"
-            },
-            {
-              "name": "Capitulo 11",
-              "url": "https://1024terabox.com/s/197vQjhEO0ClaWbpemEt1Yg"
-            },
-            {
-              "name": "Capitulo 12",
-              "url": "https://1024terabox.com/s/1p0dT1PYkaS9UD89Hc-zJRg"
-            }
-          ]
-        },
-        {
-          "title": "Temporada 2",
-          "urls": [
-            {
-              "name": "Capitulo 01",
-              "url": "https://1024terabox.com/s/1Gd2jYnTbNWYM84NmnauC0w"
-            },
-            {
-              "name": "Capitulo 02",
-              "url": "https://1024terabox.com/s/1cNNfKvd6ksnYFvVYCr5P0Q"
-            },
-            {
-              "name": "Capitulo 03",
-              "url": "https://1024terabox.com/s/1yTu2JL7ZHFK3LPF-FUC48Q"
-            },
-            {
-              "name": "Capitulo 04",
-              "url": "https://1024terabox.com/s/148M5DUYE67B7625DN4xPMw"
-            },
-            {
-              "name": "Capitulo 05",
-              "url": "https://1024terabox.com/s/1igofH_opBquxcIVvncU-Vg"
-            },
-            {
-              "name": "Capitulo 06",
-              "url": "https://1024terabox.com/s/110VxaPauAwgIrJpbNvvEBg"
-            },
-            {
-              "name": "Capitulo 07",
-              "url": "https://1024terabox.com/s/1q4ruT8eK9Ukjz40bal9EvQ"
-            },
-            {
-              "name": "Capitulo 08",
-              "url": "https://1024terabox.com/s/1R8gOGoO4bruZNXVF-aRiuw"
-            },
-            {
-              "name": "Capitulo 09",
-              "url": "https://1024terabox.com/s/1hYEAfhjobyEwclhdEC6vRQ"
-            },
-            {
-              "name": "Capitulo 10",
-              "url": "https://1024terabox.com/s/1U7rbJP08WbrJncoE1vNfXw"
-            },
-            {
-              "name": "Capitulo 11",
-              "url": "https://1024terabox.com/s/1xBQjbUKkAnoh2hdIEFrlcQ"
-            },
-            {
-              "name": "Capitulo 12",
-              "url": "https://1024terabox.com/s/17bOKuT-3oMrtWb8DCXvFZg"
-            },
-            {
-              "name": "Capitulo 13",
-              "url": "https://1024terabox.com/s/1V0UczLWLYSiLrTf9PkkXig"
-            },
-            {
-              "name": "Capitulo 14",
-              "url": "https://1024terabox.com/s/18g3I28-RnFW3PIaVz0zp9A"
-            },
-            {
-              "name": "Capitulo 15",
-              "url": "https://1024terabox.com/s/1Lcv-Qo5E2PKylJxLIJk_Ug"
-            },
-            {
-              "name": "Capitulo 16",
-              "url": "https://1024terabox.com/s/1Gwh7P8B8pIUUt7O2aGyUfA"
-            },
-            {
-              "name": "Capitulo 17",
-              "url": "https://1024terabox.com/s/1JMDMRSl14cFZBYQQ_L67TA"
-            },
-            {
-              "name": "Capitulo 18",
-              "url": "https://1024terabox.com/s/14jpeC7LJMQVGZLNh-4FEzQ"
-            },
-            {
-              "name": "Capitulo 19",
-              "url": "https://1024terabox.com/s/1EDuGy_LETA_VAXUa42_5sw"
-            },
-            {
-              "name": "Capitulo 20",
-              "url": "https://1024terabox.com/s/1owxNU5EhDArnMuA4_MZzmg"
-            },
-            {
-              "name": "Capitulo 21",
-              "url": "https://1024terabox.com/s/1RKGhJIP4ePkWZA6TgM7IUw"
-            },
-            {
-              "name": "Capitulo 22",
-              "url": "https://1024terabox.com/s/1mjaqSZzGE-qK4_1XXz1Qpg"
-            },
-            {
-              "name": "Capitulo 23",
-              "url": "https://1024terabox.com/s/1K-7iUaUxCfGd_rEIsSUiEw"
-            },
-            {
-              "name": "Capitulo 24",
-              "url": "https://1024terabox.com/s/1DNUWeXIeLgCYlrootdO-FQ"
-            },
-            {
-              "name": "Capitulo 25",
-              "url": "https://1024terabox.com/s/1rNCaMEHwCjxwSL94XTG0fg"
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
+[
+  {
+    "id": "vinland-saga",
+    "title": "Vinland Saga",
+    "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx101348-2fhDFPCuMNiz.jpg",
+    "description": "Thorfinn is son to one of the Vikings' greatest warriors, but when his father is killed in battle by the mercenary leader Askeladd, he swears to have his revenge. Thorfinn joins Askeladd's band in order to challenge him to a duel, and ends up caught in the middle of a war for the crown of England. (Fuente: Kodansha USA)",
+    "genres": "Action, Adventure, Drama",
+    "episodes": [
+      {
+        "title": "Temporada 1",
+        "urls": [
+          {
+            "name": "Capitulo 01",
+            "url": "https://1024terabox.com/s/1Xq9uCGcoRcMp4kmPxovwZA"
+          },
+          {
+            "name": "Capitulo 02",
+            "url": "https://1024terabox.com/s/1SJ1-3dbXQLFuJ-gNguOLog"
+          },
+          {
+            "name": "Capitulo 03",
+            "url": "https://1024terabox.com/s/1xPB5edIGWOTVNp7Y7QcBvg"
+          },
+          {
+            "name": "Capitulo 04",
+            "url": "https://1024terabox.com/s/12B4Pnpu5in0KZkMgKIh0SQ"
+          },
+          {
+            "name": "Capitulo 05",
+            "url": "https://1024terabox.com/s/174hI4Y725vXOhy0ZOSztZQ"
+          },
+          {
+            "name": "Capitulo 06",
+            "url": "https://1024terabox.com/s/11qrpeyuk2ysAS5SgM7kAKA"
+          },
+          {
+            "name": "Capitulo 07",
+            "url": "https://1024terabox.com/s/1z8SbbsblthYJYfURFWuzdQ"
+          },
+          {
+            "name": "Capitulo 08",
+            "url": "https://1024terabox.com/s/1yoq8IAqSFMkHIjxzXLZiAA"
+          },
+          {
+            "name": "Capitulo 09",
+            "url": "https://1024terabox.com/s/1q2eNdFWrB-LlvOh485Ailg"
+          },
+          {
+            "name": "Capitulo 10",
+            "url": "https://1024terabox.com/s/1G7T3AqRdZmWVUh5c0NvLCg"
+          },
+          {
+            "name": "Capitulo 11",
+            "url": "https://1024terabox.com/s/1b7awDjauU0LtjkJDOah8CQ"
+          },
+          {
+            "name": "Capitulo 12",
+            "url": "https://1024terabox.com/s/1OQNOi4DKHePMVBZq9O6Gwg"
+          },
+          {
+            "name": "Capitulo 13",
+            "url": "https://1024terabox.com/s/1ILgFVUsXvFdeOnpz9rE3pw"
+          },
+          {
+            "name": "Capitulo 14",
+            "url": "https://1024terabox.com/s/1r-9_AfPNAT_RVpEfwJFgHw"
+          },
+          {
+            "name": "Capitulo 15",
+            "url": "https://1024terabox.com/s/1MpAxlOHF86y0WLjt194GCA"
+          },
+          {
+            "name": "Capitulo 16",
+            "url": "https://1024terabox.com/s/1qBoza5Ant69gZcvr8UNiMw"
+          },
+          {
+            "name": "Capitulo 17",
+            "url": "https://1024terabox.com/s/1-ik9cQ2SdjpOFXj3QrS20g"
+          },
+          {
+            "name": "Capitulo 18",
+            "url": "https://1024terabox.com/s/1ZNtQIeRkSUa8yO1TjJRXfQ"
+          },
+          {
+            "name": "Capitulo 19",
+            "url": "https://1024terabox.com/s/1Qv5HIK51oNdMOiixppVshw"
+          },
+          {
+            "name": "Capitulo 20",
+            "url": "https://1024terabox.com/s/1BasiK8Lq57Sc5ipGh4KbYw"
+          },
+          {
+            "name": "Capitulo 21",
+            "url": "https://1024terabox.com/s/1ulpf5Gl1uW00uf4cVAmeOA"
+          },
+          {
+            "name": "Capitulo 22",
+            "url": "https://1024terabox.com/s/1Ks1eVBPZluQ6KYqILaMmmw"
+          },
+          {
+            "name": "Capitulo 23",
+            "url": "https://1024terabox.com/s/1fgyOc6E5pYTLwsqm3bqjfw"
+          },
+          {
+            "name": "Capitulo 24",
+            "url": "https://1024terabox.com/s/1aPRwPD9nwianTigonIffKg"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "sanda",
+    "title": "Sanda",
+    "cover": "https://s4.anilist.co/file/anilistcdn/media/anime/cover/medium/bx179302-gWWAh5BfQyl4.jpg",
+    "description": "In a future where children are few and regarded as Japan's most valuable assets, Christmas has become a mere legend of the past. For the students of Daikoku Welfare Academy—a boarding school where they are educated, protected, and monitored—the mythical Santa Claus is a forgotten character of fiction. For the adults, Santa Claus is a very real menace that needs to be neutralized by the Saint Nick Pursuit Unit in case he makes an appearance. Shiori Fuyumura, a student of Daikoku Welfare Academy, is determined to find her best friend, Ichie Ono, who has been declared dead after being missing for six months. One morning, Fuyumura summons her fellow class representative, Kazushige Sanda, only to attack the unknowing boy. She is convinced that Sanda is the descendant of the infamous Santa Claus—the only person who can make her wish of finding Ono come true—and is determined to force out his dormant true self by any means necessary. (Fuente: MAL Rewrite)",
+    "genres": "Action, Drama, Mystery",
+    "episodes": [
+      {
+        "title": "Temporada 1",
+        "urls": [
+          {
+            "name": "Capitulo 01",
+            "url": "https://1024terabox.com/s/1-0-C--3jvpTl_nS2MM8OjA"
+          },
+          {
+            "name": "Capitulo 02",
+            "url": "https://1024terabox.com/s/1h3NceRjhVBIYLKu09ykM7Q"
+          },
+          {
+            "name": "Capitulo 03",
+            "url": "https://1024terabox.com/s/1To874XqKxWJyZrqCs2odkg"
+          },
+          {
+            "name": "Capitulo 04",
+            "url": "https://1024terabox.com/s/15sjg2nY3Xt07hzxgiThHFQ"
+          },
+          {
+            "name": "Capitulo 05",
+            "url": "https://1024terabox.com/s/1489Ivy5gJXm5xETjNzeP2w"
+          },
+          {
+            "name": "Capitulo 06",
+            "url": "https://1024terabox.com/s/1yuN0_IkWO9Ll80fF9g0JJw"
+          },
+          {
+            "name": "Capitulo 07",
+            "url": "https://1024terabox.com/s/1_DKD4gHmhvX7F_ujqp-e3Q"
+          },
+          {
+            "name": "Capitulo 08",
+            "url": "https://1024terabox.com/s/1nXI_U_VOWjs5rXbPfc3pDA"
+          },
+          {
+            "name": "Capitulo 09",
+            "url": "https://1024terabox.com/s/1YrO6_DAGjpwMdMn7OfPPCg"
+          }
+        ]
+      }
+    ]
+  }
+]
