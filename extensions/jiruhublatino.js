@@ -92,7 +92,13 @@ export default class extends Extension {
     try {
       const raw = await this.request("", { headers: { "Miru-Url": API_URL } });
       const data = typeof raw === "string" ? JSON.parse(raw) : raw;
-      this.animeList = (data && Array.isArray(data.animes)) ? data.animes : [];
+      if (Array.isArray(data)) {
+        this.animeList = data;
+      } else if (data && Array.isArray(data.animes)) {
+        this.animeList = data.animes;
+      } else {
+        this.animeList = [];
+      }
       return this.animeList;
     } catch {
       this.animeList = [];
